@@ -329,7 +329,7 @@ mainGameLoop
     bit     gameState
     bvs     .waitTime3
     jsr     handlePlayerDeath 
-    jsr     Lfb68
+    jsr     handleStairs
     jsr     checkP0P1Collision
     jsr     checkDoorwayPassages
 .waitTime3
@@ -394,7 +394,7 @@ resetPressed
 .notOnGame3
     lda     #MSBL_SIZE8 | PF_PRIORITY | PF_REFLECT        
     sta     CTRLPF
-    jsr     Lfd0a
+    jsr     initRoom
     ldx     #$04			     ; five creatures on >= level 5
     lda     gameSelection
     cmp     #$04
@@ -506,7 +506,7 @@ checkForWinning SUBROUTINE
     bne     .countDownTorch		; unconditional
 .justBonk
     ldx     #THUNKSOUND			; sound #2
-    jsr     Lf88c
+    jsr     playSound
 .countDownTorch
     dec     secondsCounter
     bne     .dontResetSeconds
@@ -594,7 +594,7 @@ afterLeftRight
     bne     endPlayerDelta                   ; unconditional?
 playNoisySound
     ldx     #NOISY3SOUND	    ; sound #3
-    jsr     Lf88c
+    jsr     playSound
 endPlayerDelta
     bit     doorwayMovementFlag
     bmi     .noMovement
@@ -620,10 +620,10 @@ handleUpMovement
     cmp     #$01
     beq     handleStairExit
     jsr     add_7_toHPos
-    jsr     Lf28e
+    jsr     adjustNegativeY
     bne     playNoisySound2
     jsr     add_0_toHPos
-    jsr     Lf28e
+    jsr     adjustNegativeY
     bne     playNoisySound2
 applyVerticalDelta
     lda     playerScrollY 
@@ -633,7 +633,7 @@ applyVerticalDelta
     rts
 playNoisySound2
     ldx     #NOISY3SOUND	    ; sound #3
-    jsr     Lf88c
+    jsr     playSound
 .noMovement
     rts
 
@@ -688,7 +688,7 @@ doPlayerFineCalc
 add_0_toVPos
     lda     playerScrollY
     bne     doorCheck               ; unconditional?
-Lf28e
+adjustNegativeY
     ldy     playerScrollY
     dey
     tya
@@ -733,19 +733,19 @@ updateGameVisualsAndState
     sta     NUSIZ1
     lda     gameState
     cmp     #$02
-    beq     Lf2d8
+    beq     skipLogic
     and     #$04
     beq     doRollingEyes
     lda     frameCount
-    bne     Lf2d8
+    bne     skipLogic
     jsr     setSelectionVariables
-Lf2d8
-    jmp     Lf315
+skipLogic
+    jmp     readInput
     
 doRollingEyes
     lda     rollingEyesTimer
     beq     .rollingDone
-    jsr     Lf57d
+    jsr     checkCollisions
     lda     frameCount
     lsr
     and     #$07
@@ -754,27 +754,27 @@ doRollingEyes
     bne     resetEyeGraphics
 .rollingDone
     ldx     itemGatheredFlag
-    beq     Lf300
+    beq     skipItemDraw
     ldx     itemActionIndex
     lda     #H_FONT
     sta     spriteHeight
     lda     playerCurrentFloor
     sta     objFloorLoc,x
-    jsr     Lf526
-    bpl     Lf315
-Lf300
+    jsr     drawItem
+    bpl     readInput
+skipItemDraw
     bit     torchAnimationIdx
-    bvc     Lf312
+    bvc     eyesCommon
     bit     torchAnimationIdx
-    bmi     Lf30d
-    jsr     Lf4f1
-    bpl     Lf315
-Lf30d
-    jsr     Lf57d
-    bpl     Lf34d
-Lf312
-    jsr     Lf57d 
-Lf315
+    bmi     eyesWithTorch
+    jsr     checkItemVisibility
+    bpl     readInput
+eyesWithTorch
+    jsr     checkCollisions
+    bpl     preparePlayfield
+eyesCommon
+    jsr     checkCollisions 
+readInput
     lda     SWCHA                   ; get joystick value
 
 resetEyeGraphics
@@ -785,21 +785,21 @@ resetEyeGraphics
     ldy     #%10100101              ; center pupils
     ldx     #$01
     rol
-    bcs     Lf329
+    bcs     setRightEyes
     ldy     #%11000110              ; right pupils
-Lf329
+setRightEyes
     rol
-    bcs     Lf32e
+    bcs     setLeftEyes
     ldy     #%01100011              ; left pupils
-Lf32e
+setLeftEyes
     rol
-    bcs     Lf332
+    bcs     adjustEyeX
     dex 
-Lf332
+adjustEyeX
     rol
-    bcs     Lf336
+    bcs     storeEyeGraphic
     inx
-Lf336
+storeEyeGraphic
     tya
     sta     eyeRAM,x
     lda     #<eyeRAM
@@ -811,9 +811,9 @@ Lf336
     ldy     #$01
     lda     playerAbsPosY
     ldx     playerPosX
-    bne     Lf397                   ; unconditional?
+    bne     setPlayerVertOffset                   ; unconditional?
 
-Lf34d
+preparePlayfield
     lda     tmpBallHorizPosition
     sta     ballHorizPosition
     lda     gameSelection
@@ -835,20 +835,20 @@ Lf34d
     lda     playerPosX
     sec
     sbc     #$0d
-    bcs     Lf37b
+    bcs     ballLeftBound
     adc     #$a0
     ldx     #XMAX
-    bne     Lf381                   ; unconditional
+    bne     setBallPos                   ; unconditional
 
-Lf37b
+ballLeftBound
     cmp     #$84
-    bcc     Lf387
+    bcc     setTorchHeight
     ldx     #XMIN
-Lf381
+setBallPos
     stx     ballHorizPosition
     ldx     #ENABLE_BM
     stx     ENABL
-Lf387
+setTorchHeight
     tax
     lda     #H_TORCH
     sta     playerVertSize
@@ -858,7 +858,7 @@ Lf387
     lda     playerAbsPosY
     sec
     sbc     #$0c
-Lf397
+setPlayerVertOffset
     sta     playerVertOffset
     stx     player1HorizPosition
     sty     object2Color
@@ -881,7 +881,7 @@ Lf397
     lda     rollingEyesTimer
     beq     .notRolling
     lda     #$03
-    bne     Lf3c8                   ; unconditional
+    bne     checkLightning                   ; unconditional
 
 .notRolling
     lda     creaturesInRoom
@@ -889,7 +889,7 @@ Lf397
     bit     SWCHB
     bvs     .skipRandomLightning
     lda     #$27
-Lf3c8
+checkLightning
     and     frameCount
     bne     .skipRandomLightning
     lda     randomSeed
@@ -911,19 +911,19 @@ Lf3c8
     stx     lightningColorMask 
     lda     colorCycTimer
     and     #$10
-    beq     Lf3ff
+    beq     resetColorCycle
     lda     frameCount
-    bne     Lf3f6
+    bne     incColorCycle
     inc     colorCycTimer
-Lf3f6
+incColorCycle
     lda     colorCycTimer
     ora     #$10
     sta     colorCycTimer
     tay 
-    bne     Lf401
-Lf3ff
+    bne     setColorMode
+resetColorCycle
     ldx     #$ff
-Lf401
+setColorMode
     sty     colorEOR
     stx     colorCycleMode
         
@@ -1001,37 +1001,37 @@ positionObjects
     lda     #0                      ;2        
     sta     calculatedFineValue     ;3        
     bit     torchAnimationIdx       ;3        
-    bvc     Lf4a1                   ;2/3      
+    bvc     checkPfScroll                   ;2/3      
     bit     doorwayCrossingStatus   ;3        
-    bmi     Lf4a1                   ;2/3      
+    bmi     checkPfScroll                   ;2/3      
     lda     gameSelection           ;3        
-    beq     Lf4a1                   ;2/3      
+    beq     checkPfScroll                   ;2/3      
     lda     pfScrollOffsetB                  ;3        
-    beq     Lf48c                   ;2/3      
+    beq     checkScrollB                   ;2/3      
     jsr     handlePlayfieldScrolling ;6        
-    bmi     Lf48c                   ;2/3      
+    bmi     checkScrollB                   ;2/3      
     sta     calculatedFineValue     ;3 = 47
-Lf48c
+checkScrollB
     lda     pfScrollOffsetA                  ;3        
-    beq     Lf4a1                   ;2/3      
+    beq     checkPfScroll                   ;2/3      
     tax                             ;2        
     jsr     handlePlayfieldScrolling ;6        
     cmp     #$50                    ;2        
-    bcs     Lf4a1                   ;2/3      
+    bcs     checkPfScroll                   ;2/3      
     sta     lightningColorMask      ;3        
     lda     #$08                    ;2        
     sta     temporaryOne            ;3        
     txa                             ;2        
-    bne     Lf4af                   ;2/3 = 29
-Lf4a1
+    bne     calcFineScroll                   ;2/3 = 29
+checkPfScroll
     lda     playerScrollY     ;3        playfield gfx scoll calculations
     cmp     #$26                    ;2        
-    bcc     Lf4bd                   ;2/3      
+    bcc     setFineScrollHigh                   ;2/3      
     cmp     #$d6                    ;2        
-    bcs     Lf4c3                   ;2/3      
+    bcs     setFineScrollLow                   ;2/3      
     adc     #$2a                    ;2        
     sta     temporaryOne            ;3 = 16
-Lf4af
+calcFineScroll
     lsr                             ;2        
     lsr                             ;2        
     lsr                             ;2        
@@ -1042,15 +1042,15 @@ Lf4af
     adc     temporaryOne + 1        ;3        
     tax                             ;2        
     bpl     nextRandom              ;2/3 = 22
-Lf4bd
+setFineScrollHigh
     ldx     #$1e                    ;2        
     lda     #$00                    ;2        
-    beq     Lf4c7                   ;2/3 = 6 unconditional
+    beq     storeFineScroll                   ;2/3 = 6 unconditional
 
-Lf4c3
+setFineScrollLow
     ldx     #$00                    ;2        
     lda     #$0f                    ;2 = 4
-Lf4c7
+storeFineScroll
     sta     temporaryOne            ;3 = 3
 nextRandom
     lda     randomSeedAlternate     ;3      random generator  
@@ -1093,7 +1093,7 @@ setInvItemPTRs SUBROUTINE
 
 ; ******************************************************************
     
-Lf4f1 SUBROUTINE
+checkItemVisibility SUBROUTINE
     ldx     itemLastSeen            ;3 = 3
 Lf4f3
     dex                             ;2        
@@ -1127,7 +1127,7 @@ Lf505
     bne     Lf4fa                   ;2/3!     
     jsr     torchLightUpItem        ;6        
     beq     Lf4fa                   ;2/3!= 17
-Lf526
+drawItem
     ldy     itemGatheredFlag        ;3        
     bne     .notGathered            ;2/3      
     lda     itemIDTable,x           ;4        
@@ -1161,72 +1161,72 @@ torchLightUpItem SUBROUTINE
 .noVTwosComplement
     sta     temporaryOne + 1        ;3        
     cmp     temporaryOne            ;3        
-    bcs     Lf55e                   ;2/3      
+    bcs     shiftTempOne                   ;2/3      
     lsr                             ;2        
-    bpl     Lf560                   ;2/3 = 12 unconditional
-Lf55e
+    bpl     checkLightRange                   ;2/3 = 12 unconditional
+shiftTempOne
     lsr     temporaryOne            ;5 = 5
-Lf560
+checkLightRange
     clc                             ;2        
     adc     temporaryOne            ;3        
     cmp     #$11                    ;2   torch's effective light range      
-    bcs     Lf595                   ;2/3      
+    bcs     exitCollision                   ;2/3      
     lda     objPosX,x  ;4        
     sta     p0PosY    ;3        
     lda     objPosY,x   ;4 = 20
-Lf56d
+checkLightVis
     jsr     handlePlayfieldScrolling ;6        
     cmp     #$50                    ;2        
-    bcc     Lf578                   ;2/3      
+    bcc     setLightVis                   ;2/3      
     cmp     #$f9                    ;2        
-    bcc     Lf595                   ;2/3 = 14
-Lf578
+    bcc     exitCollision                   ;2/3 = 14
+setLightVis
     sta     playerPFScrollValue     ;3        
     lda     #$01                    ;2        
     rts                             ;6 = 11
 
 ; ******************************************************************
     
-Lf57d SUBROUTINE
+checkCollisions SUBROUTINE
     ldx     collisionIndex
 Lf57f
     dex
-    bpl     Lf598
+    bpl     doCreatureUpdate
     ldx     numberOfCreatures
     bit     torchAnimationIdx
-    bvc     Lf598
+    bvc     doCreatureUpdate
     inx
     jsr     checkForStairs
-    beq     Lf591
+    beq     nextCollision
     stx     collisionIndex
     rts
-Lf591
+nextCollision
     cpx     collisionIndex
     bne     Lf57f
-Lf595
+exitCollision
     jmp     Lf4fe
-Lf598
-    jsr     Lf59e
-    beq     Lf591
+doCreatureUpdate
+    jsr     updateCreaturePosition
+    beq     nextCollision
     rts
 
 ; ******************************************************************
     
-Lf59e SUBROUTINE
+updateCreaturePosition SUBROUTINE
     lda     randFloorLoc,x
     cmp     playerCurrentFloor
-    bne     Lf595
+    bne     exitCollision
     lda     gameSelection
     beq     Lf5ba
     lda     rollingEyesTimer
     bne     Lf5ba
     lda     creaturesInRoom
-    beq     Lf595
+    beq     exitCollision
     lda     randomRoomLocations,x
     cmp     playerCurrentRoom
     beq     Lf5ba
     cmp     playerDoorCrossing
-    bne     Lf595
+    bne     exitCollision
 Lf5ba
     inx
     stx     object1Color
@@ -1234,8 +1234,8 @@ Lf5ba
     lda     randPosX,x
     sta     p0PosY
     lda     randPosY,x
-    jsr     Lf56d
-    beq     Lf591
+    jsr     checkLightVis
+    beq     nextCollision
     stx     collisionIndex
     lda     #<creatureGraphics
     clc
@@ -1515,36 +1515,36 @@ torchCountLoop
     sty     GRP1                    ;3     kernel just 'ends' here?  and goes into audio stuff
    
     lda     gameState               ;3        
-    bne     Lf7a3                   ;2/3      
+    bne     audioCheckFreq                   ;2/3      
     lda     creaturesInRoom                  ;3        
-    bne     Lf773                   ;2/3      
+    bne     audioWindCheck                   ;2/3      
     ldx     windSoundCounter                  ;3        
     cpx     #$7f                    ;2        
     beq     silenceAudioZero        ;2/3      
     sta     audioWindSoundBit       ;3 = 49
-Lf773
+audioWindCheck
     lda     windSoundCounter                  ;3        
     tay                             ;2        
     cmp     #$7f                    ;2        
-    beq     Lf78a                   ;2/3      
+    beq     setWindBit                   ;2/3      
     and     #$0f                    ;2        
-    bne     Lf78c                   ;2/3      
+    bne     updateWindCounter                   ;2/3      
     tya                             ;2        
-    beq     Lf78a                   ;2/3      
-    bmi     Lf78a                   ;2/3      
+    beq     setWindBit                   ;2/3      
+    bmi     setWindBit                   ;2/3      
     ldx     randomSeed              ;3        
     lda     start,x                 ;4        ; using program code as random wind values (!)
     and     #$01                    ;2 = 28
-Lf78a
+setWindBit
     sta     audioWindSoundBit
-Lf78c
+updateWindCounter
     lda     audioWindSoundBit
-    bne     Lf794
+    bne     decWindCounter
     inc     windSoundCounter
-    bne     Lf796 
-Lf794
+    bne     playWindSound 
+decWindCounter
     dec     windSoundCounter
-Lf796
+playWindSound
     ldx     #NOISESOUND
     tya
     lsr
@@ -1554,11 +1554,11 @@ Lf796
     tay
     eor     #$0f
     bpl     setAudioZero			; unconditional?
-Lf7a3
+audioCheckFreq
     lsr
-    bcc     Lf7c4
+    bcc     checkEndSound
     lda     audioFrequency0Value
-    bne     Lf7b7
+    bne     updateNoiseSound
     lda     randomSeed
     and     #$70
     lsr
@@ -1567,7 +1567,7 @@ Lf7a3
     adc     #$10
     sta     audioFrequency0Value
     bpl     silenceAudioZero 
-Lf7b7
+updateNoiseSound
     lda     audioFrequency0Value
     eor     #$ff
     tay 
@@ -1576,7 +1576,7 @@ Lf7b7
     lda     #$0c
     bpl     setAudioZero            ; unconditional
 
-Lf7c4
+checkEndSound
     cmp     #$22
     bne     silenceAudioZero
     lda     frameCount
@@ -1602,21 +1602,21 @@ setAudioZero
     bne     silenceAudioOne
     ldy     audioSoundIndex
     lda     audioVolume1Value
-    bne     Lf7f4
+    bne     checkSound2
     sta     AUDV1
     sta     audioSoundIndex
     jmp     .skipSoundEleven
 
 ; CHECK SOUND #2
     
-Lf7f4
+checkSound2
     dec     audioVolume1Value
     cpy     #2
     bne     .skipSoundTwo
     ldx     #BASSSOUND
     lda     audioVolume1Value
     eor     #$03
-Lf800
+setBassSound
     tay
     lda     #$08
     bne     setAudioOne             ; unconditional
@@ -1627,9 +1627,9 @@ Lf800
     cpy     #3
     bne     .skipSoundThree
     ldx     #THUNKSOUND
-Lf80b
+checkSoundSet
     lda     audioVolume1Value
-    bpl     Lf800
+    bpl     setBassSound
 
 ; CHECK SOUND #4
 
@@ -1648,7 +1648,7 @@ Lf80b
     bne     .skipSoundFive
     lda     audioVolume1Value
     eor     #$03
-Lf823
+setBassSound2
     ldy     #$08
     ldx     #BASSSOUND
     bne     setAudioOne             ; unconditional
@@ -1659,7 +1659,7 @@ Lf823
     cpy     #6
     bne     .skipSoundSix
     lda     audioVolume1Value
-    bpl     Lf823
+    bpl     setBassSound2
 
 ; CHECK SOUND #7
 
@@ -1667,7 +1667,7 @@ Lf823
     cpy     #7
     bne     .skipSoundSeven
     ldx     #URNCENTERSOUND
-    bne     Lf80b                   ; unconditional
+    bne     checkSoundSet                   ; unconditional
 
 ; CHECK SOUND #8
 
@@ -1675,7 +1675,7 @@ Lf823
     cpy     #8
     bne     .skipSoundEight
     ldx     #NOISESOUND
-    bne     Lf80b                   ; unconditional
+    bne     checkSoundSet                   ; unconditional
 
 silenceAudioOne
     ldy     #0
@@ -1727,7 +1727,7 @@ setAudioOne
     lda     #$18                    ; setup for footsteps sound
     bne     setAudioOne             ; unconditional
 
-Lf88c
+playSound
     cpx     audioSoundIndex
     beq     .returnFromSoundRoutine
     cpx     #$03
@@ -1751,9 +1751,9 @@ handlePlayerDeath SUBROUTINE
     and     #$fd
     sta     gameState
     ror
-    bcc     Lf8ec
+    bcc     processCreatures
     dec     rollingEyesTimer
-    bne     Lf8ec
+    bne     processCreatures
     lda     #0
     sta     gameState
     sta     audioSoundIndex
@@ -1784,7 +1784,7 @@ handlePlayerDeath SUBROUTINE
 
 ; ******************************************************************
     
-Lf8ec SUBROUTINE
+processCreatures SUBROUTINE
     lda     frameCount
     and     #$07
     sta     scanline
@@ -1795,54 +1795,54 @@ Lf8ec SUBROUTINE
     lda     #0
     sta     creaturesInRoom
     ldx     numberOfCreatures
-Lf900
+creatureLoop
     lda     randFloorLoc,x
     cmp     playerCurrentFloor
-    bne     Lf945
+    bne     updateCreatureLogic
     lda     randomRoomLocations,x
     cmp     playerCurrentRoom
-    beq     Lf910
+    beq     incCreatureCount
     cmp     playerDoorCrossing
-    bne     Lf945
-Lf910
+    bne     updateCreatureLogic
+incCreatureCount
     inc     creaturesInRoom
     lda     rollingEyesTimer
-    bne     Lf94c
+    bne     skipCreatureDraw
     txa
-    bne     Lf91f
+    bne     checkCreatureState
     lda     gameSelection
     cmp     #$07
-    bcs     Lf925
-Lf91f
+    bcs     moveCreature
+checkCreatureState
     lda     itemBeingCarried
     cmp     #$01
-    beq     Lf94c
-Lf925
-    jsr     Lfa6f
-    beq     Lf9a0
+    beq     skipCreatureDraw
+moveCreature
+    jsr     lookupCreatureSpeed
+    beq     nextCreature
     lda     playerPosX
     sec
-    sbc     Lfdec,x
-    bcs     Lf934
+    sbc     creatureStartX,x
+    bcs     storeCreatureX
     lda     playerPosX
-Lf934
+storeCreatureX
     sta     temporaryOne
     lda     playerScrollY
     sec
-    sbc     Lfdf1,x
-    bcs     Lf940
+    sbc     creatureStartY,x
+    bcs     storeCreatureY
     lda     playerScrollY
-Lf940
+storeCreatureY
     sta     temporaryOne + 1
-    jmp     Lf983
-Lf945
-    jsr     Lfa68
-    beq     Lf9a0
-    bne     Lf950                   ; unconditional
-Lf94c
+    jmp     adjustCreaturePos
+updateCreatureLogic
+    jsr     getCreatureSpeedIndex
+    beq     nextCreature
+    bne     checkCreatureRoom                   ; unconditional
+skipCreatureDraw
     lda     floorNumberPTRs
-    beq     Lf9a0
-Lf950
+    beq     nextCreature
+checkCreatureRoom
     lda     objectRoomLocations,x
     and     #$3f
     tay
@@ -1863,58 +1863,58 @@ Lf950
     lda     randomLocationsTableV,y
     sta     temporaryOne + 1
     cmp     randPosY,x
-    bne     Lf983
+    bne     adjustCreaturePos
     lda     randPosX,x
     cmp     temporaryOne
-    bne     Lf983
+    bne     adjustCreaturePos
     lda     creatureProcessMask
     ora     bitmaskThing,x
     sta     creatureProcessMask
-    bne     Lf9a0
-Lf983
+    bne     nextCreature
+adjustCreaturePos
     lda     randPosX,x
     cmp     temporaryOne
-    bcc     Lf98f
-    beq     Lf991
+    bcc     incCreatureX
+    beq     checkCreatureY
     dec     randPosX,x
-    bne     Lf991
-Lf98f
+    bne     checkCreatureY
+incCreatureX
     inc     randPosX,x
-Lf991
+checkCreatureY
     lda     randPosY,x
     cmp     temporaryOne + 1
-    bcc     Lf99e 
-    beq     Lf9a0
+    bcc     incCreatureY 
+    beq     nextCreature
     dec     randPosY,x
-    jmp     Lf9a0
-Lf99e
+    jmp     nextCreature
+incCreatureY
     inc     randPosY,x
-Lf9a0
+nextCreature
     dex 
-    bmi     Lf9a6
-    jmp     Lf900
-Lf9a6
+    bmi     processCreatureMask
+    jmp     creatureLoop
+processCreatureMask
     ldx     #$00
     lda     creatureProcessMask
-Lf9aa
+maskLoop
     ror
-    bcs     Lf9b5
+    bcs     moveCreatureRoom
     inx
     cpx     numberOfCreatures
-    beq     Lf9aa
-    bcc     Lf9aa
+    beq     maskLoop
+    bcc     maskLoop
     rts
 
-Lf9b5 SUBROUTINE
+moveCreatureRoom SUBROUTINE
     lda     creatureProcessMask
     eor     bitmaskThing,x
     sta     creatureProcessMask
     lda     objectRoomLocations,x
     tay
     and     #$30
-    beq     Lf9f3
+    beq     randomizeCreature
     cmp     #$10
-    bne     Lf9db
+    bne     checkRoomMove
     tya
     and     #$c0
     sta     temporaryOne
@@ -1927,20 +1927,20 @@ Lf9b5 SUBROUTINE
     clc
     adc     randomRoomLocations,x
     sta     randomRoomLocations,x
-    bpl     Lf9ec
-Lf9db
+    bpl     storeCreatureRoom
+checkRoomMove
     cmp     #$30
-    beq     Lf9e3
+    beq     incFloor
     dec     randFloorLoc,x
-    bpl     Lf9e5
-Lf9e3
+    bpl     setStartRoom
+incFloor
     inc     randFloorLoc,x
-Lf9e5
+setStartRoom
     tya
     and     #$c0
     eor     #$40
     sta     temporaryOne
-Lf9ec
+storeCreatureRoom
     lda     randomRoomLocations,x
     ora     temporaryOne
     sta     objectRoomLocations,x
@@ -1948,7 +1948,7 @@ Lf9ec
 
 ; ******************************************************************
     
-Lf9f3 SUBROUTINE
+randomizeCreature SUBROUTINE
     tya
     rol
     rol
@@ -1960,56 +1960,56 @@ Lf9f3 SUBROUTINE
     and     #$03
     sta     lightningColorMask
     sta     colorCycleMode
-    bpl     Lfa13
-Lfa07
+    bpl     checkRndVal
+rndWait
     inc     colorCycleMode
     lda     colorCycleMode
     and     #$03
     sta     colorCycleMode
     cmp     lightningColorMask
-    beq     Lfa1d
-Lfa13
+    beq     setRndPtr
+checkRndVal
     cmp     torchesHNumberPTRs
-    beq     Lfa07
-    jsr     Lfa1f
-    beq     Lfa07
+    beq     rndWait
+    jsr     checkFloorRnd
+    beq     rndWait
     rts
-Lfa1d
+setRndPtr
     lda     torchesHNumberPTRs
-Lfa1f
+checkFloorRnd
     sta     torchesLNumberPTRs
     lda     randFloorLoc,x
     sta     tmpFloorNumber
     lda     randomRoomLocations,x
     sta     temporaryOne
     jsr     Lfdae
-    bmi     Lfa41
-    beq     Lfa39
+    bmi     checkValidRoom
+    beq     setGame9Room
     lda     gameSelection
     cmp     #$08
-    beq     Lfa39
+    beq     setGame9Room
     txa
     bne     skipOnOut
-Lfa39
+setGame9Room
     lda     tmpRoomNumber
     sta     temporaryOne
     lda     #$01
-    bne     Lfa56                   ; unconditional
+    bne     storeRndRoom                   ; unconditional
 
-Lfa41
+checkValidRoom
     cmp     #$ff
     beq     skipOnOut
     ldy     randFloorLoc,x
     lda     randomRoomLocations,x
     jsr     Lfd4c
     bcs     skipOnOut
-    bne     Lfa54
+    bne     setRoomBits
     lda     #$02
-    bne     Lfa56                   ; unconditional
+    bne     storeRndRoom                   ; unconditional
 
-Lfa54
+setRoomBits
     lda     #$03
-Lfa56
+storeRndRoom
     asl     torchesLNumberPTRs
     asl     torchesLNumberPTRs
     ora     torchesLNumberPTRs
@@ -2026,11 +2026,11 @@ skipOnOut
 
 ; ******************************************************************
     
-Lfa68 SUBROUTINE
+getCreatureSpeedIndex SUBROUTINE
     lda     creaturesPresentMask
     and     bitmaskThing,x
     beq     Lfa83
-Lfa6f
+lookupCreatureSpeed
     lda     gameSelection
     cmp     #$07
     bcc     .skipHardCreatureSpeeds
@@ -2070,72 +2070,72 @@ checkP0P1Collision SUBROUTINE
     lda     itemGatheredFlag
     bne     skipOnOut
     bit     torchAnimationIdx
-    bvc     Lfaa3
-    bpl     Lfaac
+    bvc     checkCreatureKill
+    bpl     handlePlayerKill
     rts
-Lfaa3
+checkCreatureKill
     lda     collisionIndex
     cmp     numberOfCreatures
     beq     deadPlayerHandler
     bcc     deadPlayerHandler
     rts
-Lfaac
+handlePlayerKill
     ldx     #6				; sound #6
-    jsr     Lf88c
+    jsr     playSound
     lda     itemBeingCarried
-    bmi     Lfafe
+    bmi     checkItemLastSeen
     cmp     itemLastSeen
-    beq     Lfafe
+    beq     checkItemLastSeen
     cmp     #$02
-    bcc     Lfafe
+    bcc     checkItemLastSeen
     lda     itemLastSeen
     cmp     #$02
-    bcc     Lfafe
+    bcc     checkItemLastSeen
     clc
     adc     itemBeingCarried
     tay
     ldx     #7				; sound #7
-    jsr     Lf88c
+    jsr     playSound
 ;^^^^^^^^^^^^ section dealing with urn piece assembly
     lda     urnAssembly1
     ora     urnAssembly2
-    bpl     Lfae5
+    bpl     assembleUrn
     ldx     #11				; sound #11
-    jsr     Lf88c
+    jsr     playSound
     lda     #$08			; the following stuff sets "urn complete"
     sta     urnAssembly0		;
     lda     #$ff			;
     sta     urnAssembly1		;
     sta     urnAssembly2		;
     lda     #$02
-    bne     Lfb00			; unconditional
-Lfae5
+    bne     finishItemCheck			; unconditional
+assembleUrn
     ldx     #$02
     cpy     #$05
-    bne     Lfaec
+    bne     setUrnParts
     dex 
-Lfaec
+setUrnParts
     lda     #$ff
     sta     urnAssembly0,x
     ldx     #$00
     cpy     #$07
-    bne     Lfaf7
+    bne     setUrnComplete
     inx 
-Lfaf7
+setUrnComplete
     sty     urnAssembly0,x
     inx 
     inx 
     txa
-    bne     Lfb00
+    bne     finishItemCheck
 ;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Lfafe
+checkItemLastSeen
     lda     itemLastSeen
-Lfb00
+finishItemCheck
     pha
     bit     itemBeingCarried
-    bmi     Lfb08
-    jsr     Lfbe2
-Lfb08
+    bmi     exitCollisionCheck
+    jsr     pickupItem
+exitCollisionCheck
     pla
     sta     itemBeingCarried 
 allDone
@@ -2165,10 +2165,10 @@ deadPlayerHandler SUBROUTINE
 
 ; ******************************************************************
     
-Lfb2b SUBROUTINE
+resetCreaturePositions SUBROUTINE
     lda     gameSelection
     cmp     #$05
-    bcc     Lfb92
+    bcc     handleInput
     lda     roomStairsStatus
     and     #$07
     asl
@@ -2183,12 +2183,12 @@ Lfb2b SUBROUTINE
     ora     #$20
     ora     playerCurrentRoom
     sta     temporaryOne
-Lfb47
+resetCreaturesLoop
     ldx     numberOfCreatures
-Lfb49
+resetCreaturesInner
     lda     #0
     sta     creaturesPresentMask
-Lfb4d
+checkCreatureReset
     lda     randFloorLoc,x
     cmp     playerCurrentFloor
     bne     .continueLoop
@@ -2202,36 +2202,36 @@ Lfb4d
     sta     creaturesPresentMask
 .continueLoop
     dex
-    bpl     Lfb4d
+    bpl     checkCreatureReset
     rts
 
 ; ******************************************************************
     
-Lfb68 SUBROUTINE
+handleStairs SUBROUTINE
     lda     roomStairsStatus
     and     #$0f
     cmp     #$0f
-    beq     Lfb92
+    beq     handleInput
     bit     roomStairsStatus
-    bpl     Lfb90
-    bvs     Lfb92
-    jsr     Lfb2b
+    bpl     setStairStatus
+    bvs     handleInput
+    jsr     resetCreaturePositions
     ldx     #9				; sound #9
     lda     roomStairsStatus
     and     #$04 
-    beq     Lfb85
+    beq     decFloor
     inc     playerCurrentFloor 
-    bne     Lfb88
-Lfb85
+    bne     playStairSound
+decFloor
     dec     playerCurrentFloor
     inx					; inc to sound #10
-Lfb88
-    jsr     Lf88c
-    jsr     Lfd0a
+playStairSound
+    jsr     playSound
+    jsr     initRoom
     ora     #$40
-Lfb90
+setStairStatus
     sta     roomStairsStatus
-Lfb92
+handleInput
     lda     SWCHA
     and     #$f0
     eor     #$f0
@@ -2262,8 +2262,8 @@ Lfb92
     bit     itemBeingCarried
     bmi     .noItemHeld
     ldx     #LEADSOUND           ; sound # 5
-    jsr     Lf88c
-    jsr     Lfbe2
+    jsr     playSound
+    jsr     pickupItem
     lda     #$ff
     sta     itemBeingCarried	; set to 'no item held'
     bne     .goToRTS
@@ -2271,11 +2271,11 @@ Lfb92
     lda     itemGatheredFlag
     beq     .goToRTS
     bit     CXP0FB|$30
-    bmi     Lfbfb
+    bmi     dropItem
     lda     #$00
     sta     itemGatheredFlag
     beq     .goToRTS
-Lfbe2
+pickupItem
     lda     #$05
     sta     itemGatheredFlag
     lda     itemBeingCarried
@@ -2283,39 +2283,39 @@ Lfbe2
     lda     playerDeltaX
     tay
     ora     playerDeltaY
-    beq     Lfbfb
+    beq     dropItem
     iny
     iny
     ldx     playerDeltaY
     inx
-    jsr     Lfc0b
+    jsr     checkItemDrop
     bcc     .goToRTS
-Lfbfb
+dropItem
     dec     itemGatheredFlag
     beq     .goToRTS
     ldx     itemGatheredFlag
     dex
     ldy     itemGatheredFlag
     dey 
-    jsr     Lfc0b
-    bcs     Lfbfb
+    jsr     checkItemDrop
+    bcs     dropItem
 .goToRTS
     rts
 
 ; ******************************************************************
     
-Lfc0b SUBROUTINE
+checkItemDrop SUBROUTINE
     lda     playerScrollOffsets + 1,x
     ldx     playerScrollY
     cpx     #$f4
-    bcc     Lfc18
+    bcc     checkDropY
     cmp     #$0a
-    beq     Lfc3a
-Lfc18
+    beq     dropFailed
+checkDropY
     clc
     adc     playerScrollY
     cmp     #$f4
-    bcs     Lfc3a
+    bcs     dropFailed
     ldx     itemActionIndex
     sta     objPosY,x
     jsr     handlePlayfieldScrolling
@@ -2324,13 +2324,13 @@ Lfc18
     clc
     adc     playerPosX
     cmp     #XMAX
-    bcs     Lfc3a
+    bcs     dropFailed
     ldx     itemActionIndex
     sta     objPosX,x
     sta     p0PosY
     clc
     rts
-Lfc3a
+dropFailed
     sec
     rts
 
@@ -2340,27 +2340,27 @@ checkDoorwayPassages SUBROUTINE
     lda     #$05
     sta     temporaryOne
     ldx     #$00
-Lfc42
+doorLoop
     ldy     temporaryOne
     lda     joystickValuesIndex,y
     tay 
     lda     movementValue
     and     joystickValues,y
-    beq     Lfc61
+    beq     nextDoor
     lda     playerPosX
     cpy     #$02
-    bcc     Lfc57
+    bcc     checkDoorPos
     lda     playerScrollY
-Lfc57
+checkDoorPos
     cmp     doorwayBoundaryTable,x
-    beq     Lfca5
+    beq     checkDoorExit
     cmp     doorwayBoundaryTable + 1,x
-    beq     Lfc7e
-Lfc61
+    beq     handleDoorway
+nextDoor
     inx
     inx
     dec     temporaryOne
-    bpl     Lfc42
+    bpl     doorLoop
 jmpIntoAnRTS
     rts
     
@@ -2380,17 +2380,17 @@ joystickValues
 
 ; ******************************************************************
     
-Lfc7e SUBROUTINE
+handleDoorway SUBROUTINE
     bit     doorwayCrossingStatus
     bpl     jmpIntoAnRTS
     tya
     ora     #$80
     cmp     doorwayCrossingStatus
-    beq     Lfc8d
+    beq     doorTransition
     lda     playerDoorCrossing
     sta     playerCurrentRoom
-Lfc8d
-    jsr     Lfcd8
+doorTransition
+    jsr     changeRoom
     sty     doorwayCrossingStatus
     lda     roomToRoomOffsets,y
     clc
@@ -2398,18 +2398,18 @@ Lfc8d
     sta     playerCurrentRoom
     lda     #$ff
     sta     playerDoorCrossing
-    jsr     Lfd0a
+    jsr     initRoom
     ldx     #$08
-    bne     Lfcd1
-Lfca5
+    bne     playDoorSound
+checkDoorExit
     bit     doorwayCrossingStatus
     bmi     jmpIntoAnRTS
     tya
-    jsr     Lfda6
-    beq     Lfcb3
+    jsr     getRoomIndex
+    beq     setDoorExit
     lda     itemBeingCarried
-    bne     Lfcc6
-Lfcb3
+    bne     initDoorMove
+setDoorExit
     ldy     torchesLNumberPTRs
     lda     roomToRoomOffsets,y
     clc 
@@ -2419,31 +2419,31 @@ Lfcb3
     ora     #$80
     sta     doorwayCrossingStatus
     ldx     #$04
-    bne     Lfcd1                   ; unconditional
-Lfcc6
+    bne     playDoorSound                   ; unconditional
+initDoorMove
     lda     torchesLNumberPTRs
     lsr
     tax
     lda     bitmaskThing + 6,x 
     sta     doorwayMovementFlag
     ldx     #2					; sound #2
-Lfcd1
+playDoorSound
     lda     gameSelection
     beq     jmpIntoAnRTS
-    jmp     Lf88c
+    jmp     playSound
 
 ; ******************************************************************
     
-Lfcd8 SUBROUTINE
+changeRoom SUBROUTINE
     sty     tmpYRegisterSaveLocation
     lda     gameSelection
     cmp     #$05
     bcc     .restoreYRegisterValue
-    lda     Lfd06,y
+    lda     floorYOffsets,y
     ora     #$10
     sta     temporaryOne
     tya
-    jsr     Lfda6
+    jsr     getRoomIndex
     pha
     lda     temporaryOne
     ora     tmpRoomNumber
@@ -2451,10 +2451,10 @@ Lfcd8 SUBROUTINE
     pla
     beq     Lfcfc
     ldx     #0
-    jsr     Lfb49
+    jsr     resetCreaturesInner
     bmi     .restoreYRegisterValue			; unconditional (surely...)
 Lfcfc
-    jsr     Lfb47
+    jsr     resetCreaturesLoop
 .restoreYRegisterValue
     ldy     tmpYRegisterSaveLocation
     rts
@@ -2464,18 +2464,18 @@ Lfcfc
 playerScrollOffsets
     .byte   0, 10, 0, -10
 
-Lfd06
+floorYOffsets
     .byte   $00,$40,$80,$c0                 ; $fd06 (*)
     
-Lfd0a SUBROUTINE
+initRoom SUBROUTINE
     lda     #2
-    jsr     Lfd6c
+    jsr     getFloorOffset
     sta     pfScrollOffsetA
     lda     #3
-    jsr     Lfd6c
+    jsr     getFloorOffset
     sta     pfScrollOffsetB
     lda     #0
-    jsr     Lfd6c
+    jsr     getFloorOffset
     beq     .rightSideDoor
     lda     #DOOR_LEFT_XPOS + 8		; Ball & M0 positions
     ldx     #DOOR_LEFT_XPOS		; door on left
@@ -2489,18 +2489,18 @@ Lfd0a SUBROUTINE
     ldy     playerCurrentFloor
     lda     playerCurrentRoom
     jsr     Lfd4c
-    bcs     Lfd42
-    beq     Lfd3a
+    bcs     setNoDoors
+    beq     getDoorBits
     lda     #$04
-Lfd3a
+getDoorBits
     ldx     playerCurrentRoom
     ora     doorsByRoom,x
-Lfd3f
+setDoorBits
     sta     roomStairsStatus
     rts
-Lfd42
+setNoDoors
     lda     #$0f
-    bne     Lfd3f                   ; unconditional
+    bne     setDoorBits                   ; unconditional
     
 doorsByRoom
     .byte   3,3,1,0,2,2             ; indexed by playerCurrentRoom
@@ -2512,12 +2512,12 @@ Lfd4c SUBROUTINE
     tya
     jsr     game9FloorPlanner
     sty     tmpFloorNumber
-    lda     Lfddd,y
+    lda     startRoomLayout,y
     ldy     tmpRoomNumber
     and     bitmaskThing,y
     beq     Lfd6a
     ldy     tmpFloorNumber
-    lda     Lfde5,y
+    lda     startFloorLayout,y
     ldy     tmpRoomNumber
     clc
     and     bitmaskThing,y
@@ -2528,55 +2528,55 @@ Lfd6a
 
 ; ******************************************************************
     
-Lfd6c SUBROUTINE
+getFloorOffset SUBROUTINE
     sta     torchesLNumberPTRs
     lda     playerCurrentFloor
     sta     tmpFloorNumber
     lda     playerCurrentRoom
-    jsr     Lfd9a
+    jsr     calcTableIndex
     bmi     gotoRTSWithZero
     lsr
     tay
-    lda     Lfd7f,y
+    lda     floorDataPtrs,y
     rts
 
 ; ******************************************************************
     
-Lfd7f
+floorDataPtrs
     .byte   $57,$a7,$4f                     ; $fd7f (D)
-Lfd82
+roomLayouts
     .byte   $04,$ff,$00,$80,$ff,$04,$01,$81 ; $fd82 (D)
     .byte   $05,$82,$02,$00,$83,$05,$03,$01 ; $fd8a (D)
     .byte   $06,$ff,$84,$02,$ff,$06,$85,$03 ; $fd92 (D)
 
 ; ******************************************************************
     
-Lfd9a SUBROUTINE
+calcTableIndex SUBROUTINE
     asl
     asl
     clc
     adc     torchesLNumberPTRs
     tay
-    lda     Lfd82,y
+    lda     roomLayouts,y
     sta     livesNumberPTRs
     rts
 
 ; ******************************************************************
     
-Lfda6 SUBROUTINE
+getRoomIndex SUBROUTINE
     sta     torchesLNumberPTRs
     lda     playerCurrentFloor
     sta     tmpFloorNumber
     lda     playerCurrentRoom
 Lfdae
-    jsr     Lfd9a
+    jsr     calcTableIndex
     bmi     .gotoRTS
     ldy     gameSelection
     cpy     #$02
     bcc     gotoRTSWithZero
     lda     tmpFloorNumber
     jsr     game9FloorPlanner
-    lda     Lfdd5,y
+    lda     game9Layout,y
     ldy     tmpRoomNumber
     and     bitmaskThing,y
     rts
@@ -2599,21 +2599,21 @@ game9FloorPlanner SUBROUTINE
 
 ; ******************************************************************
     
-Lfdd5
+game9Layout
     .byte   $29,$47,$34,$29,$2e,$1d,$2b,$0a ; $fdd5 (*)
 
-Lfddd
+startRoomLayout
     .byte   $21,$3b,$3f,$25                 ; $fddd (D) ; games 1-8
     .byte   $2a,$3f,$3f,$2a                 ; $fde1 (*) ; game 9 only
 
-Lfde5
+startFloorLayout
     .byte   $21,$1a,$25,$00                 ; $fde5 (D)
     .byte   $2a,$15,$2a                     ; $fde9 (*)
 
-Lfdec
+creatureStartX
     .byte   $00,$fa,$fa,$06,$06             ; $fdec (D)
 
-Lfdf1
+creatureStartY
     .byte   $00,$fe,$06,$fe,$06             ; $fdf1 (D)
 
 initialGameVariables
