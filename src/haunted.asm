@@ -1095,38 +1095,38 @@ setInvItemPTRs SUBROUTINE
     
 checkItemVisibility SUBROUTINE
     ldx     itemLastSeen            ;3 = 3
-Lf4f3
+iterateItemsLoop
     dex                             ;2        
-    bpl     Lf505                   ;2/3!     
+    bpl     checkItemPlacement                   ;2/3!     
     ldx     #$04                    ;2        
-    bne     Lf505                   ;2/3!= 8 unconditional
-Lf4fa
+    bne     checkItemPlacement                   ;2/3!= 8 unconditional
+nextItemCheck
     cpx     itemLastSeen            ;3        
-    bne     Lf4f3                   ;2/3 = 5
-Lf4fe
+    bne     iterateItemsLoop                   ;2/3 = 5
+hideItemSprite
     lda     #0                      ;2        
     sta     p0PosY    ;3        
     sta     spriteHeight            ;3        
     rts                             ;6 = 14
-Lf505
+checkItemPlacement
     cpx     itemBeingCarried        ;3        
-    beq     Lf4fa                   ;2/3!     
+    beq     nextItemCheck                   ;2/3!     
     cpx     #$02                    ;2        
     bcc     .keyOrScepter           ;2/3      
     lda     roomStairsStatus,x      ;4       (x must = 2,3, or 4) for urn pieces  
-    bmi     Lf4fa                   ;2/3!= 15
+    bmi     nextItemCheck                   ;2/3!= 15
 .keyOrScepter
     lda     gameSelection           ;3        
     cmp     #$02                    ;2        
     bcs     .game3OrHigher          ;2/3      
     cpx     #$00                    ;2        
-    beq     Lf4fa                   ;2/3!= 11
+    beq     nextItemCheck                   ;2/3!= 11
 .game3OrHigher
     lda     objFloorLoc,x  ;4        
     cmp     playerCurrentFloor      ;3        
-    bne     Lf4fa                   ;2/3!     
+    bne     nextItemCheck                   ;2/3!     
     jsr     torchLightUpItem        ;6        
-    beq     Lf4fa                   ;2/3!= 17
+    beq     nextItemCheck                   ;2/3!= 17
 drawItem
     ldy     itemGatheredFlag        ;3        
     bne     .notGathered            ;2/3      
@@ -1189,7 +1189,7 @@ setLightVis
     
 checkCollisions SUBROUTINE
     ldx     collisionIndex
-Lf57f
+nextCollisionEntity
     dex
     bpl     doCreatureUpdate
     ldx     numberOfCreatures
@@ -1202,9 +1202,9 @@ Lf57f
     rts
 nextCollision
     cpx     collisionIndex
-    bne     Lf57f
+    bne     nextCollisionEntity
 exitCollision
-    jmp     Lf4fe
+    jmp     hideItemSprite
 doCreatureUpdate
     jsr     updateCreaturePosition
     beq     nextCollision
@@ -1217,17 +1217,17 @@ updateCreaturePosition SUBROUTINE
     cmp     playerCurrentFloor
     bne     exitCollision
     lda     gameSelection
-    beq     Lf5ba
+    beq     renderCreatureSprite
     lda     rollingEyesTimer
-    bne     Lf5ba
+    bne     renderCreatureSprite
     lda     creaturesInRoom
     beq     exitCollision
     lda     randomRoomLocations,x
     cmp     playerCurrentRoom
-    beq     Lf5ba
+    beq     renderCreatureSprite
     cmp     playerDoorCrossing
     bne     exitCollision
-Lf5ba
+renderCreatureSprite
     inx
     stx     object1Color
     dex
@@ -1731,10 +1731,10 @@ playSound
     cpx     audioSoundIndex
     beq     .returnFromSoundRoutine
     cpx     #$03
-    bne     Lf898
+    bne     setSoundIndex
     lda     audioSoundIndex
     bne     .returnFromSoundRoutine
-Lf898
+setSoundIndex
     stx     audioSoundIndex
     lda     audioVolume1ValueTable,x
     sta     audioVolume1Value
@@ -1982,7 +1982,7 @@ checkFloorRnd
     sta     tmpFloorNumber
     lda     randomRoomLocations,x
     sta     temporaryOne
-    jsr     Lfdae
+    jsr     calculateRoomPointers
     bmi     checkValidRoom
     beq     setGame9Room
     lda     gameSelection
@@ -2001,7 +2001,7 @@ checkValidRoom
     beq     skipOnOut
     ldy     randFloorLoc,x
     lda     randomRoomLocations,x
-    jsr     Lfd4c
+    jsr     validateRoomExistence
     bcs     skipOnOut
     bne     setRoomBits
     lda     #$02
@@ -2029,7 +2029,7 @@ skipOnOut
 getCreatureSpeedIndex SUBROUTINE
     lda     creaturesPresentMask
     and     bitmaskThing,x
-    beq     Lfa83
+    beq     returnDefaultSpeed
 lookupCreatureSpeed
     lda     gameSelection
     cmp     #$07
@@ -2042,7 +2042,7 @@ lookupCreatureSpeed
     ldy     scanline
     and     bitmaskThing,y
     rts
-Lfa83
+returnDefaultSpeed
     lda     floorNumberPTRs
     rts
     
@@ -2449,11 +2449,11 @@ changeRoom SUBROUTINE
     ora     tmpRoomNumber
     sta     temporaryOne
     pla
-    beq     Lfcfc
+    beq     invokeResetCreatures
     ldx     #0
     jsr     resetCreaturesInner
     bmi     .restoreYRegisterValue			; unconditional (surely...)
-Lfcfc
+invokeResetCreatures
     jsr     resetCreaturesLoop
 .restoreYRegisterValue
     ldy     tmpYRegisterSaveLocation
@@ -2488,7 +2488,7 @@ initRoom SUBROUTINE
     stx     missile0HorizPosition
     ldy     playerCurrentFloor
     lda     playerCurrentRoom
-    jsr     Lfd4c
+    jsr     validateRoomExistence
     bcs     setNoDoors
     beq     getDoorBits
     lda     #$04
@@ -2507,7 +2507,7 @@ doorsByRoom
 
 ; ******************************************************************
     
-Lfd4c SUBROUTINE
+validateRoomExistence SUBROUTINE
     sta     tmpRoomNumber
     tya
     jsr     game9FloorPlanner
@@ -2515,14 +2515,14 @@ Lfd4c SUBROUTINE
     lda     startRoomLayout,y
     ldy     tmpRoomNumber
     and     bitmaskThing,y
-    beq     Lfd6a
+    beq     roomInvalidExit
     ldy     tmpFloorNumber
     lda     startFloorLayout,y
     ldy     tmpRoomNumber
     clc
     and     bitmaskThing,y
     rts
-Lfd6a
+roomInvalidExit
     sec
     rts
 
@@ -2568,7 +2568,7 @@ getRoomIndex SUBROUTINE
     lda     playerCurrentFloor
     sta     tmpFloorNumber
     lda     playerCurrentRoom
-Lfdae
+calculateRoomPointers
     jsr     calcTableIndex
     bmi     .gotoRTS
     ldy     gameSelection
