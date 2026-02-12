@@ -73,188 +73,196 @@ TWILIGHTSOUND	=	12
 ;      RIOT RAM (zero-page) labels
 ;-----------------------------------------------------------
 
-rollingEyesTimer              = $80
-itemGatheredFlag              = $81
-torchesUsed                   = $82
-creaturesInRoom          = $83
-colorCycTimer                 = $84
-collisionIndex          = $85
-itemLastSeen                  = $86
 
-secondsCounter                = $87 ; counts down from 60 every 60th frame
 
-doorwayCrossingStatus         = $88
-frameCount                    = $89
-torchAnimationIdx             = $8a
-pfScrollOffsetA          = $8b
-pfScrollOffsetB          = $8c
-playerCurrentFloor            = $8d
-movementValue                 = $8e
 
-audioFrequency0Value          = $8f
-audioVolume1Value             = $90
 
-doorwayMovementFlag          = $91 ; seems to be movement related
-audioWindSoundBit             = $92
-audioSoundIndex               = $93
 
-creaturesPresentMask          = $94
-creatureProcessMask          = $95
 
-playerLives                   = $96
-playerDoorCrossing            = $97
-windSoundCounter          = $98
-gameState                     = $99
-itemBeingCarried              = $9a
+
+; Zero-page variables (clarifying comments only, no renaming)
+rollingEyesTimer              = $80    ; Timer for rolling eyes animation
+itemGatheredFlag              = $81    ; Flag: item has been gathered
+torchesUsed                   = $82    ; Number of torches used
+creaturesInRoom               = $83    ; Number of creatures present in room
+colorCycTimer                 = $84    ; Timer for color cycling effects
+collisionIndex                = $85    ; Index for collision detection
+itemLastSeen                  = $86    ; Last item seen by player
+
+secondsCounter                = $87    ; Counts down from 60 every 60th frame (timing)
+
+doorwayCrossingStatus         = $88    ; Status of doorway crossing
+frameCount                    = $89    ; Frame counter (increments every frame)
+torchAnimationIdx             = $8a    ; Index for torch animation
+pfScrollOffsetA               = $8b    ; Playfield scroll offset A
+pfScrollOffsetB               = $8c    ; Playfield scroll offset B
+playerCurrentFloor            = $8d    ; Player's current floor
+movementValue                 = $8e    ; Value representing player movement
+
+audioFrequency0Value          = $8f    ; Audio frequency value (channel 0)
+audioVolume1Value             = $90    ; Audio volume value (channel 1)
+
+doorwayMovementFlag           = $91    ; Flag for doorway movement
+audioWindSoundBit             = $92    ; Bit for wind sound effect
+audioSoundIndex               = $93    ; Index for audio sound
+
+creaturesPresentMask          = $94    ; Bitmask for creatures present
+creatureProcessMask           = $95    ; Bitmask for creatures being processed
+
+playerLives                   = $96    ; Player's remaining lives
+playerDoorCrossing            = $97    ; Player's doorway crossing status
+windSoundCounter              = $98    ; Counter for wind sound effect
+gameState                     = $99    ; Current game state
+itemBeingCarried              = $9a    ; Item currently being carried by player
 
 ;=====================================
-roomStairsStatus              = $9b
-playerCurrentRoom             = $9c
+roomStairsStatus              = $9b    ; Bitfield: status of stairs in current room
+playerCurrentRoom             = $9c    ; Player's current room number
 ; (5) | (4)
 ; ----+----
-; (3) | (2) ; illustrate room #'s above
+; (3) | (2) ; Room layout illustration
 ; ----+----
 ; (1) | (0)
-urnAssembly0                 = $9d ; equals 8 when urn complete   (2 before)
-urnAssembly1                 = $9e ; equals $ff when urn complete (3 before)
-urnAssembly2                 = $9f ; equals $ff when urn complete (4 before)
+urnAssembly0                  = $9d    ; Urn assembly progress (equals 8 when complete)
+urnAssembly1                  = $9e    ; Urn assembly progress (equals $ff when complete)
+urnAssembly2                  = $9f    ; Urn assembly progress (equals $ff when complete)
 ;=====================================
 
 
 ;=====================================
-objFloorLoc          = $a0
-masterKeyFloorLocation        = $a0 ; 0 Key 
-                              ; $a1 ; 1 Scepter
-                              ; $a2 ; 2 Urn Left
-                              ; $a3 ; 3 Urn Center
-                              ; $a4 ; 4 Urn Right
+objFloorLoc                   = $a0    ; Floor location for objects (key, scepter, urn pieces)
+masterKeyFloorLocation        = $a0    ; Floor location for master key
+                                ; $a1 ; Scepter
+                                ; $a2 ; Urn Left
+                                ; $a3 ; Urn Center
+                                ; $a4 ; Urn Right
 ;-------------------------------------
-randFloorLoc         = $a5
-randFloorLoc0         = $a5 ; 0
-randFloorLoc1         = $a6 ; 1
-                              ; $a7 ; 2
-                              ; $a8 ; 3
-                              ; $a9 ; 4
+randFloorLoc                  = $a5    ; Randomized floor locations for objects
+randFloorLoc0                 = $a5    ; Random floor location 0
+randFloorLoc1                 = $a6    ; Random floor location 1
+                                ; $a7 ; 2
+                                ; $a8 ; 3
+                                ; $a9 ; 4
 ;======================================
 
-playerPosX                = $aa
+playerPosX                    = $aa    ; Player horizontal position
 
 ;======================================
-objPosX          = $ab
-masterKeyPosX             = $ab ; 0 Key
-                              ; $ac ; 1 Scepter
-                              ; $ad ; 2 Urn Left
-                              ; $ae ; 3 Urn Center
-                              ; $af ; 4 Urn Right
+objPosX                       = $ab    ; Horizontal position for objects (key, scepter, urn pieces)
+masterKeyPosX                 = $ab    ; Horizontal position for master key
+                                ; $ac ; Scepter
+                                ; $ad ; Urn Left
+                                ; $ae ; Urn Center
+                                ; $af ; Urn Right
 ;-------------------------------------
-randPosX             = $b0 ; 0
-randPosX1             = $b1 ; 1
-                              ; $b2 ; 2
-                              ; $b3 ; 3
-                              ; $b4 ; 4
+randPosX                      = $b0    ; Randomized horizontal positions for objects
+randPosX1                     = $b1    ; Random horizontal position 1
+                                ; $b2 ; 2
+                                ; $b3 ; 3
+                                ; $b4 ; 4
 ;======================================
 
-playerScrollY     = $b5
+playerScrollY                 = $b5    ; Player vertical scroll position
 
 ;======================================
-objPosY           = $b6
-masterKeyPosY              = $b6 ; 0 Key
-                              ; $b7 ; 1 Scepter
-                              ; $b8 ; 2 Urn Left
-                              ; $b9 ; 3 Urn Center
-                              ; $ba ; 4 Urn Right
+objPosY                       = $b6    ; Vertical position for objects (key, scepter, urn pieces)
+masterKeyPosY                 = $b6    ; Vertical position for master key
+                                ; $b7 ; Scepter
+                                ; $b8 ; Urn Left
+                                ; $b9 ; Urn Center
+                                ; $ba ; Urn Right
 ;-------------------------------------
-randPosY             = $bb ; 0
-randPosY1             = $bc ; 1
-                              ; $bd ; 2
-                              ; $be ; 3
-                              ; $bf ; 4
+randPosY                      = $bb    ; Randomized vertical positions for objects
+randPosY1                     = $bc    ; Random vertical position 1
+                                ; $bd ; 2
+                                ; $be ; 3
+                                ; $bf ; 4
 ;======================================
-objectRoomLocations           = $c0 ; 0 Key
-                              ; $c1 ; 1 Scepter
-                              ; $c2 ; 2 Urn Left
-                              ; $c3 ; 3 Urn Center
-                              ; $c4 ; 4 Urn Right
+objectRoomLocations           = $c0    ; Room location for objects (key, scepter, urn pieces)
+                                ; $c1 ; Scepter
+                                ; $c2 ; Urn Left
+                                ; $c3 ; Urn Center
+                                ; $c4 ; Urn Right
 ;-------------------------------------
-randomRoomLocations          = $c5 ; 0
-                              ; $c6 ; 1
-                              ; $c7 ; 2
-                              ; $c8 ; 3
-                              ; $c9 ; 4
+randomRoomLocations           = $c5    ; Randomized room locations for objects
+                                ; $c6 ; 1
+                                ; $c7 ; 2
+                                ; $c8 ; 3
+                                ; $c9 ; 4
 ;======================================
 
-ram_CA          = $ca ; collision with creature flag thing
+creatureCollisionFlag          = $ca    ; Set when player collides with a creature
 
-playerAbsPosY            = $cb
-gameSelection               = $cc ; 0-8 representing games 1 thru 9
-scanline                    = $cd
+playerAbsPosY                 = $cb    ; Player absolute vertical position
+gameSelection                 = $cc    ; Game selection (0-8 for games 1-9)
+scanline                      = $cd    ; Current scanline
 
 ; MANY OF THESE HAVE TEMPORARY USES
 ;*@*@*@*@*@*@*@*@*@*@*@*@*@*@*@*@*
-tmpBallHorizPosition        = $cf ; [dedicated to that use, I think]
+tmpBallHorizPosition            = $cf    ; Temporary ball horizontal position
 
-temporaryOne                = $d0 ; [used for many, many things]
-tmpColorTableIndex          = $d0
-tmpRandomValue              = $d0
-colorEOR                    = $d1 ; also referenced as temporaryOne + 1
+temporaryOne                    = $d0    ; Temporary variable (multi-use)
+tmpColorTableIndex              = $d0    ; Temporary color table index
+tmpRandomValue                  = $d0    ; Temporary random value
+colorEOR                        = $d1    ; Color EOR (also temporaryOne + 1)
 
-colorCycleMode              = $d2
-lightningColorMask          = $d3
+colorCycleMode                  = $d2    ; Color cycle mode
+lightningColorMask              = $d3    ; Lightning color mask
 
-calculatedFineValue         = $d4
-torchesHNumberPTRs          = $d4 ; (with $d5)
+calculatedFineValue             = $d4    ; Calculated fine value
+torchesHNumberPTRs              = $d4    ; Torch H number pointers (with $d5)
 
-tmpYRegisterSaveLocation    = $d5
+tmpYRegisterSaveLocation        = $d5    ; Temporary Y register save location
 
-torchesLNumberPTRs          = $d6 ; (with $d7)
-tmpFloorNumber              = $d7
+torchesLNumberPTRs              = $d6    ; Torch L number pointers (with $d7)
+tmpFloorNumber                  = $d7    ; Temporary floor number
 
-eyeRAM                      = $d8 ; (with $d9 and $da)
-livesNumberPTRs             = $d8 ; (with $d9)
-tmpRoomNumber               = $d8
+eyeRAM                          = $d8    ; Eye RAM (with $d9 and $da)
+livesNumberPTRs                 = $d8    ; Lives number pointers (with $d9)
+tmpRoomNumber                   = $d8    ; Temporary room number
 
-floorNumberPTRs             = $da ; (with $db)
+floorNumberPTRs                 = $da    ; Floor number pointers (with $db)
 ;*@*@*@*@*@*@*@*@*@*@*@*@*@*@*@*@*
 
 ;======================================
 ; RAM Table for P0,P1,M0,M1,BL
-SpriteHorizPositions        = $dc
-p0PosY        = $dc
-Player1HorizPosition        = $dd
-Missile0HorizPosition       = $de
-torchTimer                  = $df ; (Note: Missile 1 Unused)
-BallHorizPosition           = $e0
+SpriteHorizPositions            = $dc    ; Sprite horizontal positions
+p0PosY                        = $dc    ; Player 0 position Y
+Player1HorizPosition            = $dd    ; Player 1 horizontal position
+Missile0HorizPosition           = $de    ; Missile 0 horizontal position
+torchTimer                      = $df    ; Torch timer (Missile 1 unused)
+BallHorizPosition               = $e0    ; Ball horizontal position
 ;======================================
 
-sprite0GraphicPTRs          = $e1 ; (with $e2)
+sprite0GraphicPTRs               = $e1    ; Sprite 0 graphic pointers (with $e2)
 
-sprite1GraphicPTRs          = $e3 ; (with $e4)
+sprite1GraphicPTRs               = $e3    ; Sprite 1 graphic pointers (with $e4)
 
-selectSwitchDebounce        = $e5
-actionButtonDebounce        = $e6
+selectSwitchDebounce            = $e5    ; Debounce for select switch
+actionButtonDebounce            = $e6    ; Debounce for action button
 
-playerDeltaX          = $e7 ; left/right movement of player/eyes 0, 1, or -1 ($ff)
-playerDeltaY          = $e8 ;  up/down   movement of player/eyes 0, 1, or -1 ($ff)
+playerDeltaX                   = $e7    ; Player horizontal delta (left/right movement)
+playerDeltaY                   = $e8    ; Player vertical delta (up/down movement)
 
-itemActionIndex          = $e9 ; location written to when urn piece is picked up
-numberOfCreatures           = $ea
+itemActionIndex                = $e9    ; Index for item action (urn piece pickup)
+numberOfCreatures              = $ea    ; Number of creatures
 
-randomSeed                  = $eb
-randomSeedAlternate         = $ec
-spriteHeight                = $ed
+randomSeed                     = $eb    ; Random seed
+randomSeedAlternate            = $ec    ; Alternate random seed
+spriteHeight                   = $ed    ; Sprite height
 
-playerVertSize              = $ee
-playerPFScrollValue         = $ef
-playerVertOffset            = $f0
+playerVertSize                  = $ee    ; Player vertical size
+playerPFScrollValue             = $ef    ; Player playfield scroll value
+playerVertOffset                = $f0    ; Player vertical offset
 
-colorTableRAM               = $f1
-object1Color                = $f1 ; represents creature color, alternates/flickers if two onscreen
-object2Color                = $f2 ; player eye / torch color, alternates between them as needed
-object3Color                = $f3
-statusBackgroundColor       = $f4
-wallColor                   = $f5
+colorTableRAM                  = $f1    ; Color table RAM
+object1Color                   = $f1    ; Creature color (alternates/flickers if two onscreen)
+object2Color                   = $f2    ; Player eye/torch color (alternates as needed)
+object3Color                   = $f3    ; Third object color
+statusBackgroundColor          = $f4    ; Status background color
+wallColor                      = $f5    ; Wall color
 
-STACK                       = $f6 ; [and up to $ff]
+STACK                          = $f6    ; Stack (and up to $ff)
 
 ;-----------------------------------------------------------
 ;      User Defined Labels
@@ -1753,7 +1761,7 @@ HandlePlayerDeath SUBROUTINE
 .playerStillHasLives
     jsr     ScatterTheItems
     sta     CXCLR
-    lda     ram_CA
+    lda     creatureCollisionFlag
     cmp     #$01
     bne     .goToRTS
     ldy     gameSelection
@@ -2150,7 +2158,7 @@ DeadPlayerHandler SUBROUTINE
     stx     rollingEyesTimer	; max out length of player's death, LOL
     dec     playerLives
     lda     collisionIndex			; I think this relocates the thing which killed you (?)
-    sta     ram_CA
+    sta     creatureCollisionFlag
     rts
 
 ; ******************************************************************
