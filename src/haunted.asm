@@ -54,7 +54,7 @@ PLAYER_INIT_HPOS = 128
 PLAYER_INIT_VPOS = 134
 
 DOOR_LEFT_XPOS   = $3F
-DOOR_RIGHT_XPOS  = $4F
+DOORrIGHT_XPOS  = $4F
 
 ;---AUDCx CONSTANTS
 
@@ -115,57 +115,57 @@ playerCurrentRoom             = $9c
 ; (3) | (2) ; illustrate room #'s above
 ; ----+----
 ; (1) | (0)
-urnAssembly_0                 = $9d ; equals 8 when urn complete   (2 before)
-urnAssembly_1                 = $9e ; equals $ff when urn complete (3 before)
-urnAssembly_2                 = $9f ; equals $ff when urn complete (4 before)
+urnAssembly0                 = $9d ; equals 8 when urn complete   (2 before)
+urnAssembly1                 = $9e ; equals $ff when urn complete (3 before)
+urnAssembly2                 = $9f ; equals $ff when urn complete (4 before)
 ;=====================================
 
 
 ;=====================================
-objectFloorLocations          = $a0
+objFloorLoc          = $a0
 masterKeyFloorLocation        = $a0 ; 0 Key 
                               ; $a1 ; 1 Scepter
                               ; $a2 ; 2 Urn Left
                               ; $a3 ; 3 Urn Center
                               ; $a4 ; 4 Urn Right
 ;-------------------------------------
-_randomFloorLocations         = $a5
-_randomFloorLocation0         = $a5 ; 0
-_randomFloorLocation1         = $a6 ; 1
+randFloorLoc         = $a5
+randFloorLoc0         = $a5 ; 0
+randFloorLoc1         = $a6 ; 1
                               ; $a7 ; 2
                               ; $a8 ; 3
                               ; $a9 ; 4
 ;======================================
 
-playerHorizPos                = $aa
+playerPosX                = $aa
 
 ;======================================
-objectHorizPositions          = $ab
-masterKeyHorizPos             = $ab ; 0 Key
+objPosX          = $ab
+masterKeyPosX             = $ab ; 0 Key
                               ; $ac ; 1 Scepter
                               ; $ad ; 2 Urn Left
                               ; $ae ; 3 Urn Center
                               ; $af ; 4 Urn Right
 ;-------------------------------------
-_randomHPositions             = $b0 ; 0
-_randomHPosition1             = $b1 ; 1
+randPosX             = $b0 ; 0
+randPosX1             = $b1 ; 1
                               ; $b2 ; 2
                               ; $b3 ; 3
                               ; $b4 ; 4
 ;======================================
 
-playerVertPosScroll     = $b5
+playerScrollY     = $b5
 
 ;======================================
-objectVertPositions           = $b6
-masterKeyVertPos              = $b6 ; 0 Key
+objPosY           = $b6
+masterKeyPosY              = $b6 ; 0 Key
                               ; $b7 ; 1 Scepter
                               ; $b8 ; 2 Urn Left
                               ; $b9 ; 3 Urn Center
                               ; $ba ; 4 Urn Right
 ;-------------------------------------
-_randomVPositions             = $bb ; 0
-_randomVPosition1             = $bc ; 1
+randPosY             = $bb ; 0
+randPosY1             = $bc ; 1
                               ; $bd ; 2
                               ; $be ; 3
                               ; $bf ; 4
@@ -176,7 +176,7 @@ objectRoomLocations           = $c0 ; 0 Key
                               ; $c3 ; 3 Urn Center
                               ; $c4 ; 4 Urn Right
 ;-------------------------------------
-_randomRoomLocations          = $c5 ; 0
+randomRoomLocations          = $c5 ; 0
                               ; $c6 ; 1
                               ; $c7 ; 2
                               ; $c8 ; 3
@@ -185,7 +185,7 @@ _randomRoomLocations          = $c5 ; 0
 
 ram_CA          = $ca ; collision with creature flag thing
 
-playerVertPosAbs            = $cb
+playerAbsPosY            = $cb
 gameSelection               = $cc ; 0-8 representing games 1 thru 9
 scanline                    = $cd
 
@@ -219,7 +219,7 @@ floorNumberPTRs             = $da ; (with $db)
 ;======================================
 ; RAM Table for P0,P1,M0,M1,BL
 SpriteHorizPositions        = $dc
-Player0HorizPosition        = $dc
+p0PosY        = $dc
 Player1HorizPosition        = $dd
 Missile0HorizPosition       = $de
 torchTimer                  = $df ; (Note: Missile 1 Unused)
@@ -233,8 +233,8 @@ sprite1GraphicPTRs          = $e3 ; (with $e4)
 selectSwitchDebounce        = $e5
 actionButtonDebounce        = $e6
 
-playerHorizDelta          = $e7 ; left/right movement of player/eyes 0, 1, or -1 ($ff)
-playerVertDelta          = $e8 ;  up/down   movement of player/eyes 0, 1, or -1 ($ff)
+playerDeltaX          = $e7 ; left/right movement of player/eyes 0, 1, or -1 ($ff)
+playerDeltaY          = $e8 ;  up/down   movement of player/eyes 0, 1, or -1 ($ff)
 
 itemActionIndex          = $e9 ; location written to when urn piece is picked up
 numberOfCreatures           = $ea
@@ -361,16 +361,16 @@ resetPressed
 
     jsr     ScatterTheItems
     ldx     #$03
-    stx     _randomFloorLocation0	; master key "always" on floor 4?? (except game 3)
+    stx     randFloorLoc0	; master key "always" on floor 4?? (except game 3)
     inx
 
 .setItemLocationsLoop
-    lda     _randomFloorLocations,x
-    sta     objectFloorLocations,x
-    lda     _randomHPositions,x
-    sta     objectHorizPositions,x
-    lda     _randomVPositions,x
-    sta     objectVertPositions,x
+    lda     randFloorLoc,x
+    sta     objFloorLoc,x
+    lda     randPosX,x
+    sta     objPosX,x
+    lda     randPosY,x
+    sta     objPosY,x
     dex
     bpl     .setItemLocationsLoop
 
@@ -380,9 +380,9 @@ resetPressed
     inx
     stx     masterKeyFloorLocation	; x = 0, put key on player's floor (1)
     ldx     #PLAYER_INIT_HPOS - 12
-    stx     masterKeyHorizPos
+    stx     masterKeyPosX
     ldx     #PLAYER_INIT_VPOS - 2
-    stx     masterKeyVertPos		; set master key position for level 3
+    stx     masterKeyPosY		; set master key position for level 3
 .notOnGame3
     lda     #MSBL_SIZE8 | PF_PRIORITY | PF_REFLECT        
     sta     CTRLPF
@@ -395,11 +395,11 @@ resetPressed
 .lessThanGame5
     stx     numberOfCreatures
     lda     #PLAYER_INIT_HPOS
-    sta     playerHorizPos
+    sta     playerPosX
     lda     #PLAYER_INIT_VPOS
-    sta     playerVertPosScroll		; set player init pos.
+    sta     playerScrollY		; set player init pos.
     lda     #$26
-    sta     playerVertPosAbs
+    sta     playerAbsPosY
     rts
 
 ; ******************************************************************
@@ -414,7 +414,7 @@ ScatterTheItems SUBROUTINE
 .randomizeLoop
     jsr     nextRandom			; get a random value
     and     #$03				; make it from 0 to 3
-    sta     _randomFloorLocations,x	; setup objects on random floor numbers
+    sta     randFloorLoc,x	; setup objects on random floor numbers
     tay 
     txa
 .valueNotOK
@@ -431,13 +431,13 @@ ScatterTheItems SUBROUTINE
     lda     #$05
     bne     .valueNotOK			; otherwise start with 5 and do it again (unconditional)
 .valueIsOK
-    sta     _randomRoomLocations,x 
+    sta     randomRoomLocations,x 
     sta     objectRoomLocations,x	; setup objects in random rooms
     tay 
     lda     RandomLocationsTableH,y
-    sta     _randomHPositions,x		; and random horiz positions
+    sta     randPosX,x		; and random horiz positions
     lda     RandomLocationsTableV,y
-    sta     _randomVPositions,x		; and random vert positions
+    sta     randPosY,x		; and random vert positions
     dex
     bpl     .randomizeLoop
     rts
@@ -487,7 +487,7 @@ CheckForWinning SUBROUTINE
     bne     .countDownTorch
     cmp     itemBeingCarried		; check for completed urn
     bne     .justBonk
-    lda     urnAssembly_0
+    lda     urnAssembly0
     cmp     #$08				; 8 means urn complete
     bne     .justBonk 
     lda     #$01
@@ -530,7 +530,7 @@ Lf1a5 SUBROUTINE
     jsr     Lf1bf
     lda     #0
     sta     doorwayMovementFlag
-    lda     playerVertPosScroll
+    lda     playerScrollY
     cmp     #$26
     bcc     Lf1bc
     cmp     #$d7
@@ -540,15 +540,15 @@ Lf1a5 SUBROUTINE
 Lf1ba
     sbc     #$af
 Lf1bc
-    sta     playerVertPosAbs
+    sta     playerAbsPosY
     rts
 
 ; ******************************************************************
     
 Lf1bf SUBROUTINE
     lda     #0
-    sta     playerHorizDelta
-    sta     playerVertDelta
+    sta     playerDeltaX
+    sta     playerDeltaY
     lda     roomStairsStatus
     and     #$7f
     sta     roomStairsStatus
@@ -557,16 +557,16 @@ Lf1bf SUBROUTINE
     bit     movementValue 
     bvs     Lf1e3
     bpl     Lf206
-    inc     playerHorizDelta
-    lda     playerHorizPos
+    inc     playerDeltaX
+    lda     playerPosX
     cmp     #$94
     beq     Lf254
     jsr     Add_8_toHPos
     jmp     Lf1ee
     
 Lf1e3
-    dec     playerHorizDelta
-    lda     playerHorizPos
+    dec     playerDeltaX
+    lda     playerPosX
     cmp     #$04
     beq     Lf254
     jsr     DoPlayerFineCalc
@@ -577,10 +577,10 @@ Lf1ee
     jsr     Add_0_toVPos
     bne     Lf201                   ; unconditional?
     
-    lda     playerHorizPos
+    lda     playerPosX
     clc
-    adc     playerHorizDelta
-    sta     playerHorizPos
+    adc     playerDeltaX
+    sta     playerPosX
     bne     Lf206                   ; unconditional?
 Lf201
     ldx     #NOISY3SOUND		    ; sound #3
@@ -593,8 +593,8 @@ Lf206
     beq     .noMovement
     cmp     #$20
     beq     Lf22e
-    inc     playerVertDelta
-    lda     playerVertPosScroll
+    inc     playerDeltaY
+    lda     playerScrollY
     cmp     #$fb
     beq     Lf260
     jsr     Add_7_toHPos
@@ -605,8 +605,8 @@ Lf206
     bne     Lf24e
     beq     Lf246                   ; unconditional
 Lf22e
-    dec     playerVertDelta
-    lda     playerVertPosScroll
+    dec     playerDeltaY
+    lda     playerScrollY
     cmp     #$01
     beq     Lf260
     jsr     Add_7_toHPos
@@ -616,10 +616,10 @@ Lf22e
     jsr     Lf28e
     bne     Lf24e
 Lf246
-    lda     playerVertPosScroll 
+    lda     playerScrollY 
     clc 
-    adc     playerVertDelta
-    sta     playerVertPosScroll
+    adc     playerDeltaY
+    sta     playerScrollY
     rts
 Lf24e
     ldx     #NOISY3SOUND			; sound #3
@@ -646,21 +646,21 @@ Lf260
 ; ******************************************************************
     
 Add_7_toHPos
-    lda     playerHorizPos
+    lda     playerPosX
     clc
     adc     #$07
     bne     .doFineCalculation       ; unconditional?
 Add_8_toHPos
-    lda     playerHorizPos
+    lda     playerPosX
     clc
     adc     #$08
     bne     .doFineCalculation       ; unconditional?
 Add_0_toHPos
-    lda     playerHorizPos
+    lda     playerPosX
     bne     .doFineCalculation       ; unconditional?
 
 DoPlayerFineCalc
-    ldy     playerHorizPos
+    ldy     playerPosX
     dey 
     tya
 .doFineCalculation
@@ -676,20 +676,20 @@ DoPlayerFineCalc
 ; ******************************************************************
     
 Add_0_toVPos
-    lda     playerVertPosScroll
+    lda     playerScrollY
     bne     DoorCheck               ; unconditional?
 Lf28e
-    ldy     playerVertPosScroll
+    ldy     playerScrollY
     dey
     tya
     jmp     DoorCheck
 Add_2_toVPos
-    lda     playerVertPosScroll
+    lda     playerScrollY
     clc
     adc     #$02
     bne     DoorCheck               ; unconditional?
 Add_3_toVPos
-    lda     playerVertPosScroll
+    lda     playerScrollY
     clc
     adc     #$03
 
@@ -749,7 +749,7 @@ DoRollingEyes
     lda     #H_FONT
     sta     spriteHeight
     lda     playerCurrentFloor
-    sta     objectFloorLocations,x
+    sta     objFloorLoc,x
     jsr     Lf526
     bpl     Lf315
 Lf300
@@ -799,8 +799,8 @@ Lf336
     lda     #H_EYES
     sta     playerVertSize
     ldy     #$01
-    lda     playerVertPosAbs
-    ldx     playerHorizPos
+    lda     playerAbsPosY
+    ldx     playerPosX
     bne     Lf397                   ; unconditional?
 
 Lf34d
@@ -822,7 +822,7 @@ Lf34d
     sta     sprite1GraphicPTRs
     lda     #>TorchGraphics
     sta     sprite1GraphicPTRs + 1
-    lda     playerHorizPos
+    lda     playerPosX
     sec
     sbc     #$0d
     bcs     Lf37b
@@ -845,7 +845,7 @@ Lf387
     lda     #QUAD_SIZE
     sta     NUSIZ1
     ldy     #$04
-    lda     playerVertPosAbs
+    lda     playerAbsPosY
     sec
     sbc     #$0c
 Lf397
@@ -1014,7 +1014,7 @@ Lf48c
     txa                             ;2        
     bne     Lf4af                   ;2/3 = 29
 Lf4a1
-    lda     playerVertPosScroll     ;3        playfield gfx scoll calculations
+    lda     playerScrollY     ;3        playfield gfx scoll calculations
     cmp     #$26                    ;2        
     bcc     Lf4bd                   ;2/3      
     cmp     #$d6                    ;2        
@@ -1061,9 +1061,9 @@ ItemIDTable
     
 HandlePlayfieldScrolling SUBROUTINE
     clc                             ;2        
-    adc     playerVertPosAbs        ;3        
+    adc     playerAbsPosY        ;3        
     sec                             ;2        
-    sbc     playerVertPosScroll     ;3        
+    sbc     playerScrollY     ;3        
     rts                             ;6 = 16
 
 ; ******************************************************************
@@ -1095,7 +1095,7 @@ Lf4fa
     bne     Lf4f3                   ;2/3 = 5
 Lf4fe
     lda     #0                      ;2        
-    sta     Player0HorizPosition    ;3        
+    sta     p0PosY    ;3        
     sta     spriteHeight            ;3        
     rts                             ;6 = 14
 Lf505
@@ -1112,7 +1112,7 @@ Lf505
     cpx     #$00                    ;2        
     beq     Lf4fa                   ;2/3!= 11
 .game3OrHigher
-    lda     objectFloorLocations,x  ;4        
+    lda     objFloorLoc,x  ;4        
     cmp     playerCurrentFloor      ;3        
     bne     Lf4fa                   ;2/3!     
     jsr     TorchLightUpItem        ;6        
@@ -1134,17 +1134,17 @@ Lf526
 ; ******************************************************************
     
 TorchLightUpItem SUBROUTINE
-    lda     playerHorizPos          ;3        
+    lda     playerPosX          ;3        
     sec                             ;2        
-    sbc     objectHorizPositions,x  ;4        
+    sbc     objPosX,x  ;4        
     bcs     .noHTwosComplement      ;2/3      
     eor     #$ff                    ;2        
     adc     #$01                    ;2 = 15
 .noHTwosComplement
     sta     temporaryOne            ;3        
-    lda     playerVertPosScroll     ;3        
+    lda     playerScrollY     ;3        
     sec                             ;2        
-    sbc     objectVertPositions,x   ;4        
+    sbc     objPosY,x   ;4        
     bcs     .noVTwosComplement      ;2/3      
     eor     #$ff                    ;2        
     adc     #$01                    ;2 = 18
@@ -1161,9 +1161,9 @@ Lf560
     adc     temporaryOne            ;3        
     cmp     #$11                    ;2   torch's effective light range      
     bcs     Lf595                   ;2/3      
-    lda     objectHorizPositions,x  ;4        
-    sta     Player0HorizPosition    ;3        
-    lda     objectVertPositions,x   ;4 = 20
+    lda     objPosX,x  ;4        
+    sta     p0PosY    ;3        
+    lda     objPosY,x   ;4 = 20
 Lf56d
     jsr     HandlePlayfieldScrolling ;6        
     cmp     #$50                    ;2        
@@ -1203,7 +1203,7 @@ Lf598
 ; ******************************************************************
     
 Lf59e SUBROUTINE
-    lda     _randomFloorLocations,x
+    lda     randFloorLoc,x
     cmp     playerCurrentFloor
     bne     Lf595
     lda     gameSelection
@@ -1212,7 +1212,7 @@ Lf59e SUBROUTINE
     bne     Lf5ba
     lda     creaturesInRoom
     beq     Lf595
-    lda     _randomRoomLocations,x
+    lda     randomRoomLocations,x
     cmp     playerCurrentRoom
     beq     Lf5ba
     cmp     playerDoorCrossing
@@ -1221,9 +1221,9 @@ Lf5ba
     inx
     stx     object1Color
     dex
-    lda     _randomHPositions,x
-    sta     Player0HorizPosition
-    lda     _randomVPositions,x
+    lda     randPosX,x
+    sta     p0PosY
+    lda     randPosY,x
     jsr     Lf56d
     beq     Lf591
     stx     collisionIndex
@@ -1282,7 +1282,7 @@ CalculateStairGraphic
     sta     playerPFScrollValue
     ldy     playerCurrentRoom
     lda     StairHPositionsTable,y
-    sta     Player0HorizPosition
+    sta     p0PosY
     lda     #BLACK
     sta     object1Color
     lda     #H_STAIRCASE
@@ -1761,12 +1761,12 @@ HandlePlayerDeath SUBROUTINE
     bcc     .goToRTS
     ldx     itemBeingCarried
     bmi     .goToRTS
-    lda     _randomFloorLocation1		; on bat collision, level > 7, take player's item and hide it
-    sta     objectFloorLocations,x
-    lda     _randomHPosition1
-    sta     objectHorizPositions,x
-    lda     _randomVPosition1
-    sta     objectVertPositions,x
+    lda     randFloorLoc1		; on bat collision, level > 7, take player's item and hide it
+    sta     objFloorLoc,x
+    lda     randPosX1
+    sta     objPosX,x
+    lda     randPosY1
+    sta     objPosY,x
     lda     #$ff
     sta     itemBeingCarried
 .goToRTS
@@ -1786,10 +1786,10 @@ Lf8ec SUBROUTINE
     sta     creaturesInRoom
     ldx     numberOfCreatures
 Lf900
-    lda     _randomFloorLocations,x
+    lda     randFloorLoc,x
     cmp     playerCurrentFloor
     bne     Lf945
-    lda     _randomRoomLocations,x
+    lda     randomRoomLocations,x
     cmp     playerCurrentRoom
     beq     Lf910
     cmp     playerDoorCrossing
@@ -1810,18 +1810,18 @@ Lf91f
 Lf925
     jsr     Lfa6f
     beq     Lf9a0
-    lda     playerHorizPos
+    lda     playerPosX
     sec
     sbc     Lfdec,x
     bcs     Lf934
-    lda     playerHorizPos
+    lda     playerPosX
 Lf934
     sta     temporaryOne
-    lda     playerVertPosScroll
+    lda     playerScrollY
     sec
     sbc     Lfdf1,x
     bcs     Lf940
-    lda     playerVertPosScroll
+    lda     playerScrollY
 Lf940
     sta     temporaryOne + 1
     jmp     Lf983
@@ -1852,9 +1852,9 @@ Lf950
     sta     temporaryOne
     lda     RandomLocationsTableV,y
     sta     temporaryOne + 1
-    cmp     _randomVPositions,x
+    cmp     randPosY,x
     bne     Lf983
-    lda     _randomHPositions,x
+    lda     randPosX,x
     cmp     temporaryOne
     bne     Lf983
     lda     creatureProcessMask
@@ -1862,23 +1862,23 @@ Lf950
     sta     creatureProcessMask
     bne     Lf9a0
 Lf983
-    lda     _randomHPositions,x
+    lda     randPosX,x
     cmp     temporaryOne
     bcc     Lf98f
     beq     Lf991
-    dec     _randomHPositions,x
+    dec     randPosX,x
     bne     Lf991
 Lf98f
-    inc     _randomHPositions,x
+    inc     randPosX,x
 Lf991
-    lda     _randomVPositions,x
+    lda     randPosY,x
     cmp     temporaryOne + 1
     bcc     Lf99e 
     beq     Lf9a0
-    dec     _randomVPositions,x
+    dec     randPosY,x
     jmp     Lf9a0
 Lf99e
-    inc     _randomVPositions,x
+    inc     randPosY,x
 Lf9a0
     dex 
     bmi     Lf9a6
@@ -1915,23 +1915,23 @@ Lf9b5 SUBROUTINE
     tay
     lda     RoomToRoomOffsets,y
     clc
-    adc     _randomRoomLocations,x
-    sta     _randomRoomLocations,x
+    adc     randomRoomLocations,x
+    sta     randomRoomLocations,x
     bpl     Lf9ec
 Lf9db
     cmp     #$30
     beq     Lf9e3
-    dec     _randomFloorLocations,x
+    dec     randFloorLoc,x
     bpl     Lf9e5
 Lf9e3
-    inc     _randomFloorLocations,x
+    inc     randFloorLoc,x
 Lf9e5
     tya
     and     #$c0
     eor     #$40
     sta     temporaryOne
 Lf9ec
-    lda     _randomRoomLocations,x
+    lda     randomRoomLocations,x
     ora     temporaryOne
     sta     objectRoomLocations,x
     rts
@@ -1968,9 +1968,9 @@ Lfa1d
     lda     torchesHNumberPTRs
 Lfa1f
     sta     torchesLNumberPTRs
-    lda     _randomFloorLocations,x
+    lda     randFloorLoc,x
     sta     tmpFloorNumber
-    lda     _randomRoomLocations,x
+    lda     randomRoomLocations,x
     sta     temporaryOne
     jsr     Lfdae
     bmi     Lfa41
@@ -1989,8 +1989,8 @@ Lfa39
 Lfa41
     cmp     #$ff
     beq     skipOnOut
-    ldy     _randomFloorLocations,x
-    lda     _randomRoomLocations,x
+    ldy     randFloorLoc,x
+    lda     randomRoomLocations,x
     jsr     Lfd4c
     bcs     skipOnOut
     bne     Lfa54
@@ -2087,16 +2087,16 @@ Lfaac
     ldx     #7				; sound #7
     jsr     Lf88c
 ;^^^^^^^^^^^^ section dealing with urn piece assembly
-    lda     urnAssembly_1
-    ora     urnAssembly_2
+    lda     urnAssembly1
+    ora     urnAssembly2
     bpl     Lfae5
     ldx     #11				; sound #11
     jsr     Lf88c
     lda     #$08			; the following stuff sets "urn complete"
-    sta     urnAssembly_0		;
+    sta     urnAssembly0		;
     lda     #$ff			;
-    sta     urnAssembly_1		;
-    sta     urnAssembly_2		;
+    sta     urnAssembly1		;
+    sta     urnAssembly2		;
     lda     #$02
     bne     Lfb00			; unconditional
 Lfae5
@@ -2106,13 +2106,13 @@ Lfae5
     dex 
 Lfaec
     lda     #$ff
-    sta     urnAssembly_0,x
+    sta     urnAssembly0,x
     ldx     #$00
     cpy     #$07
     bne     Lfaf7
     inx 
 Lfaf7
-    sty     urnAssembly_0,x
+    sty     urnAssembly0,x
     inx 
     inx 
     txa
@@ -2179,10 +2179,10 @@ Lfb49
     lda     #0
     sta     creaturesPresentMask
 Lfb4d
-    lda     _randomFloorLocations,x
+    lda     randFloorLoc,x
     cmp     playerCurrentFloor
     bne     .continueLoop
-    lda     _randomRoomLocations,x
+    lda     randomRoomLocations,x
     cmp     playerCurrentRoom
     bne     .continueLoop
     lda     temporaryOne
@@ -2270,13 +2270,13 @@ Lfbe2
     sta     itemGatheredFlag
     lda     itemBeingCarried
     sta     itemActionIndex
-    lda     playerHorizDelta
+    lda     playerDeltaX
     tay
-    ora     playerVertDelta
+    ora     playerDeltaY
     beq     Lfbfb
     iny
     iny
-    ldx     playerVertDelta
+    ldx     playerDeltaY
     inx
     jsr     Lfc0b
     bcc     .goToRTS
@@ -2296,28 +2296,28 @@ Lfbfb
     
 Lfc0b SUBROUTINE
     lda     PlayerScrollOffsets + 1,x
-    ldx     playerVertPosScroll
+    ldx     playerScrollY
     cpx     #$f4
     bcc     Lfc18
     cmp     #$0a
     beq     Lfc3a
 Lfc18
     clc
-    adc     playerVertPosScroll
+    adc     playerScrollY
     cmp     #$f4
     bcs     Lfc3a
     ldx     itemActionIndex
-    sta     objectVertPositions,x
+    sta     objPosY,x
     jsr     HandlePlayfieldScrolling
     sta     playerPFScrollValue
     lda     PlayerScrollOffsets,y
     clc
-    adc     playerHorizPos
+    adc     playerPosX
     cmp     #XMAX
     bcs     Lfc3a
     ldx     itemActionIndex
-    sta     objectHorizPositions,x
-    sta     Player0HorizPosition
+    sta     objPosX,x
+    sta     p0PosY
     clc
     rts
 Lfc3a
@@ -2337,10 +2337,10 @@ Lfc42
     lda     movementValue
     and     JoystickValues,y
     beq     Lfc61
-    lda     playerHorizPos
+    lda     playerPosX
     cpy     #$02
     bcc     Lfc57
-    lda     playerVertPosScroll
+    lda     playerScrollY
 Lfc57
     cmp     DoorwayBoundaryTable,x
     beq     Lfca5
@@ -2471,8 +2471,8 @@ Lfd0a SUBROUTINE
     ldx     #DOOR_LEFT_XPOS		; door on left
     bne     .setDoorPosition		; unconditional
 .rightSideDoor
-    lda     #DOOR_RIGHT_XPOS		; Ball & M0 positions
-    ldx     #DOOR_RIGHT_XPOS + 8	; door on right
+    lda     #DOORrIGHT_XPOS		; Ball & M0 positions
+    ldx     #DOORrIGHT_XPOS + 8	; door on right
 .setDoorPosition
     sta     tmpBallHorizPosition
     stx     Missile0HorizPosition
